@@ -11,11 +11,13 @@ const io = new Server(httpServer, {
 	cors: {
 		origin: env.CLIENT_URL,
 		methods: ["GET", "POST"],
+		credentials: true,
 	},
 });
 
 io.use((socket, next) => {
-	const token = (socket.handshake.auth as Record<string, unknown>).token as string | undefined;
+	const token = (socket.handshake.auth as Record<string, unknown>).token as
+		string | undefined;
 	if (!token) {
 		return next(new Error("Authentication required"));
 	}
@@ -57,12 +59,8 @@ process.on("SIGINT", gracefulShutdown);
 const start = async (): Promise<void> => {
 	await connectDB();
 	httpServer.listen(env.PORT, () => {
-		console.log(
-			`[Server] Running on port ${env.PORT} in ${env.NODE_ENV} mode`
-		);
-		console.log(
-			`[Server] Swagger docs: http://localhost:${env.PORT}/api-docs`
-		);
+		console.log(`[Server] Running on port ${env.PORT} in ${env.NODE_ENV} mode`);
+		console.log(`[Server] Swagger docs: http://localhost:${env.PORT}/api-docs`);
 	});
 };
 

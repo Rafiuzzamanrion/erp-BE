@@ -58,3 +58,7 @@ Runs on port 5000. Swagger at `/api-docs`. All endpoints are versioned under `/a
 **Required env vars:** `MONGODB_URI`, `JWT_SECRET`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`. See `.env.example` for optional ones.
 
 **Scripts:** `yarn dev` (hot reload), `yarn build` (compile), `yarn seed` (populate DB), `yarn test`, `yarn typecheck`, `yarn lint`.
+
+## Vercel
+
+`vercel.json` builds the project as a serverless function under `api/index.js`. Required env vars in the Vercel dashboard: `MONGODB_URI`, `JWT_SECRET`, `NODE_ENV=production`, and Cloudinary keys. `CLIENT_URL` supports multiple comma-separated origins so preview deployments don't get CORS errors. After deploying, run `yarn seed` against the same `MONGODB_URI` to create the admin user, then confirm `GET /api/v1/health` returns `adminSeeded: true`.

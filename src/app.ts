@@ -18,6 +18,7 @@ import categoryRoutes from "./modules/categories/category.route";
 import productRoutes from "./modules/products/product.route";
 import saleRoutes from "./modules/sales/sale.route";
 import dashboardRoutes from "./modules/dashboard/dashboard.route";
+import { User } from "./modules/users/user.model";
 
 import mongoose from "mongoose";
 
@@ -26,7 +27,12 @@ const app = express();
 app.use(helmet());
 app.use(
 	cors({
-		origin: env.CLIENT_URL,
+		origin: (origin, callback) => {
+			if (!origin) return callback(null, true);
+			const allowed = env.CLIENT_URL.includes(origin);
+			if (allowed) return callback(null, true);
+			callback(new Error(`CORS blocked origin: ${origin}`));
+		},
 		credentials: true,
 	})
 );
@@ -54,15 +60,21 @@ const loginLimiter = rateLimit({
 
 setupSwagger(app);
 
-app.get("/api/v1/health", (_req, res) => {
+app.get("/api/v1/health", async (_req, res) => {
 	const dbStatus =
 		mongoose.connection.readyState === 1 ? "connected" : "disconnected";
+	const adminExists =
+		dbStatus === "connected"
+			? await User.exists({ email: "admin@erp.com" }).lean()
+			: null;
 	res.json({
 		success: true,
 		message: "Server is running",
 		data: {
 			uptime: process.uptime(),
 			dbStatus,
+			adminSeeded: !!adminExists,
+			env: env.NODE_ENV,
 			timestamp: new Date().toISOString(),
 		},
 	});

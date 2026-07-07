@@ -10,10 +10,17 @@ const envSchema = z.object({
 	JWT_EXPIRES_IN: z.string().default("1d"),
 	CLOUDINARY_CLOUD_NAME: z.string().min(1, "CLOUDINARY_CLOUD_NAME is required"),
 	CLOUDINARY_API_KEY: z.string().min(1, "CLOUDINARY_API_KEY is required"),
-	CLOUDINARY_API_SECRET: z
+	CLOUDINARY_API_SECRET: z.string().min(1, "CLOUDINARY_API_SECRET is required"),
+	CLIENT_URL: z
 		.string()
-		.min(1, "CLOUDINARY_API_SECRET is required"),
-	CLIENT_URL: z.string().url().default("http://localhost:5173"),
+		.min(1, "CLIENT_URL is required")
+		.transform((val) =>
+			val
+				.split(",")
+				.map((u) => u.trim())
+				.filter(Boolean)
+		)
+		.default(["http://localhost:5173"]),
 	NODE_ENV: z
 		.enum(["development", "production", "test"])
 		.default("development"),
