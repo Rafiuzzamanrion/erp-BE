@@ -1,9 +1,10 @@
-import { Product } from "../products/product.model";
+import { Product, IProduct } from "../products/product.model";
 import { Sale } from "../sales/sale.model";
 import {
 	DashboardQuery,
 	DashboardStats,
 	LowStockProduct,
+	LowStockAlerts,
 	DailyRevenue,
 	CategoryRevenue,
 	RecentSale,
@@ -154,4 +155,16 @@ export const getStats = async (
 	statsCache.set(cacheKey, { data, expiry: Date.now() + STATS_TTL });
 
 	return data;
+};
+
+export const getLowStockAlerts = async (): Promise<LowStockAlerts> => {
+	const products = await Product.aggregate<LowStockProduct>([
+		{ $match: { stockQuantity: { $lt: 5 } } },
+		{ $project: { name: 1, sku: 1, stockQuantity: 1 } },
+	]);
+
+	return {
+		lowStockCount: products.length,
+		lowStockProducts: products,
+	};
 };

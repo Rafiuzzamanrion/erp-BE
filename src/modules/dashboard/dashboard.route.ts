@@ -75,4 +75,36 @@ router.get(
 	dashboardController.getStats
 );
 
+/**
+ * @swagger
+ * /dashboard/low-stock-alerts:
+ *   get:
+ *     summary: Get low stock alerts (lightweight poll endpoint for serverless fallback)
+ *     tags: [Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Low stock alerts retrieved
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "Low stock alerts retrieved successfully"
+ *               data:
+ *                 lowStockCount: 3
+ *                 lowStockProducts:
+ *                   - _id: "64a1b2c3d4e5f6"
+ *                     name: "Wireless Mouse"
+ *                     sku: "WM-001"
+ *                     stockQuantity: 3
+ *       401:
+ *         description: Not authenticated
+ */
+router.get(
+	"/low-stock-alerts",
+	authenticate,
+	dashboardController.getLowStockAlerts
+);
+
 export default router;

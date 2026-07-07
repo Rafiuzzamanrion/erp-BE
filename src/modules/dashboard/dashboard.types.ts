@@ -39,3 +39,8 @@ export interface RecentSale {
 	soldBy: { _id: string; name: string };
 	items: Array<{ productName: string; quantity: number; subtotal: number }>;
 }
+
+export interface LowStockAlerts {
+	lowStockCount: number;
+	lowStockProducts: LowStockProduct[];
+}

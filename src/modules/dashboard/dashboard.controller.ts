@@ -11,3 +11,10 @@ export const getStats = asyncHandler(
 		ApiResponse.success(res, "Dashboard stats retrieved successfully", data);
 	}
 );
+
+export const getLowStockAlerts = asyncHandler(
+	async (_req: Request, res: Response): Promise<void> => {
+		const data = await dashboardService.getLowStockAlerts();
+		ApiResponse.success(res, "Low stock alerts retrieved successfully", data);
+	}
+);
