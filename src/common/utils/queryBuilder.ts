@@ -1,4 +1,4 @@
-import { Model, Document, Query } from "mongoose";
+import { Model } from "mongoose";
 
 interface QueryParams {
 	[key: string]: unknown;
@@ -11,19 +11,25 @@ export interface PaginationMeta {
 	totalPages: number;
 }
 
-export class QueryBuilder<T extends Document> {
-	private modelQuery: Query<unknown[], unknown>;
+const RESERVED_KEYS = new Set(["search", "sort", "page", "limit"]);
+
+export class QueryBuilder<T> {
+	private model: Model<T>;
 	private queryObj: QueryParams;
+	private filterObj: Record<string, unknown>;
+	private sortStr = "-createdAt";
 	private _page = 1;
 	private _limit = 10;
+	private populatePaths: Array<{ path: string; select?: string }> = [];
 
 	constructor(
 		model: Model<T>,
 		queryObj: QueryParams,
 		baseFilter: Record<string, unknown> = {}
 	) {
-		this.modelQuery = model.find(baseFilter) as unknown as Query<unknown[], unknown>;
+		this.model = model;
 		this.queryObj = queryObj;
+		this.filterObj = { ...baseFilter };
 	}
 
 	search(fields: string[]): this {
@@ -33,64 +39,61 @@ export class QueryBuilder<T extends Document> {
 				searchVal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
 				"i"
 			);
-			const orConditions = fields.map((field) => ({
+			this.filterObj.$or = fields.map((field) => ({
 				[field]: { $regex: searchRegex },
 			}));
-			this.modelQuery = this.modelQuery.find({
-				$or: orConditions,
-			}) as unknown as Query<unknown[], unknown>;
 		}
 		return this;
 	}
 
 	filter(fields: string[]): this {
-		const filterObj: Record<string, unknown> = {};
-		const reserved = ["search", "sort", "page", "limit"];
 		for (const field of fields) {
 			const val = this.queryObj[field];
-			if (val !== undefined && !reserved.includes(field)) {
-				filterObj[field] = val;
+			if (val !== undefined && val !== "" && !RESERVED_KEYS.has(field)) {
+				this.filterObj[field] = val;
 			}
-		}
-		if (Object.keys(filterObj).length > 0) {
-			this.modelQuery = this.modelQuery.find(
-				filterObj
-			) as unknown as Query<unknown[], unknown>;
 		}
 		return this;
 	}
 
 	sort(defaultSort = "-createdAt"): this {
-		const sortBy =
+		const rawSort =
 			(typeof this.queryObj.sort === "string"
 				? this.queryObj.sort
 				: undefined) || defaultSort;
-		const sortStr = sortBy
+		this.sortStr = rawSort
 			.split(",")
 			.map((s) => (s.startsWith("-") ? `-${s.substring(1)}` : s))
 			.join(" ");
-		this.modelQuery = this.modelQuery.sort(
-			sortStr
-		) as unknown as Query<unknown[], unknown>;
 		return this;
 	}
 
 	paginate(page?: number, limit?: number): this {
 		this._page = page || 1;
 		this._limit = limit || 10;
-		const skip = (this._page - 1) * this._limit;
-		this.modelQuery = this.modelQuery
-			.skip(skip)
-			.limit(this._limit) as unknown as Query<unknown[], unknown>;
+		return this;
+	}
+
+	populate(path: string, select?: string): this {
+		this.populatePaths.push({ path, select });
 		return this;
 	}
 
 	async execute(): Promise<{ data: unknown[]; meta: PaginationMeta }> {
+		const skip = (this._page - 1) * this._limit;
+		let query = this.model
+			.find(this.filterObj)
+			.sort(this.sortStr)
+			.skip(skip)
+			.limit(this._limit);
+
+		for (const { path, select } of this.populatePaths) {
+			query = query.populate(path, select);
+		}
+
 		const [data, total] = await Promise.all([
-			this.modelQuery.lean().exec(),
-			(this.modelQuery.model as Model<T>).countDocuments(
-				this.modelQuery.getFilter()
-			),
+			query.lean().exec(),
+			this.model.countDocuments(this.filterObj),
 		]);
 		return {
 			data,

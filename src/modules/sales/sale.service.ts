@@ -3,6 +3,7 @@ import Sale, { ISale } from "./sale.model";
 import Product from "../products/product.model";
 import { ApiError } from "../../common/utils/ApiError";
 import { HTTP_STATUS } from "../../common/constants/httpStatus.constant";
+import { QueryBuilder } from "../../common/utils/queryBuilder";
 import { CreateSaleInput, SaleQuery } from "./sale.types";
 
 export const createSale = async (
@@ -107,31 +108,19 @@ export const getSales = async (
 	sales: ISale[];
 	meta: { page: number; limit: number; total: number; totalPages: number };
 }> => {
-	const page = query.page ?? 1;
-	const limit = query.limit ?? 10;
-	const sort = query.sort || "-createdAt";
-	const skip = (page - 1) * limit;
-
-	const sortOption: Record<string, 1 | -1> = {};
-	if (sort.startsWith("-")) {
-		sortOption[sort.substring(1)] = -1;
-	} else {
-		sortOption[sort] = 1;
-	}
-
-	const [sales, total] = await Promise.all([
-		Sale.find()
-			.sort(sortOption)
-			.skip(skip)
-			.limit(limit)
-			.populate("soldBy", "name email")
-			.lean(),
-		Sale.countDocuments(),
-	]);
+	const { page, limit } = query;
+	const result = await new QueryBuilder<ISale>(
+		Sale,
+		query as Record<string, unknown>
+	)
+		.sort("-createdAt")
+		.paginate(page, limit)
+		.populate("soldBy", "name email")
+		.execute();
 
 	return {
-		sales: sales as ISale[],
-		meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+		sales: result.data as ISale[],
+		meta: result.meta,
 	};
 };
 

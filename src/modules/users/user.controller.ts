@@ -5,8 +5,10 @@ import { HTTP_STATUS } from "../../common/constants/httpStatus.constant";
 import * as userService from "./user.service";
 import { createUserSchema, updateUserSchema } from "./user.schema";
 
-export const getUsers = asyncHandler(async (_req: Request, res: Response) => {
-	const users = await userService.listUsers();
+export const getUsers = asyncHandler(async (req: Request, res: Response) => {
+	const search =
+		typeof req.query.search === "string" ? req.query.search : undefined;
+	const users = await userService.listUsers(search);
 	ApiResponse.success(res, "Users retrieved successfully", users);
 });
 
@@ -23,7 +25,13 @@ export const getUser = asyncHandler(async (req: Request, res: Response) => {
 export const createUser = asyncHandler(async (req: Request, res: Response) => {
 	const data = createUserSchema.parse(req.body);
 	const user = await userService.createUser(data);
-	ApiResponse.success(res, "User created successfully", user, undefined, HTTP_STATUS.CREATED);
+	ApiResponse.success(
+		res,
+		"User created successfully",
+		user,
+		undefined,
+		HTTP_STATUS.CREATED
+	);
 });
 
 export const updateUser = asyncHandler(async (req: Request, res: Response) => {

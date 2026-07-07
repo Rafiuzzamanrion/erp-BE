@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { z, ZodSchema } from "zod";
+import { ZodSchema } from "zod";
 import { ApiError } from "../common/utils/ApiError";
 
 type ValidationSource = "body" | "params" | "query";
@@ -23,8 +23,6 @@ export const validate = (
 			req.body = result.data;
 		} else if (source === "params") {
 			(req as unknown as Record<string, unknown>).params = result.data;
-		} else if (source === "query") {
-			(req as unknown as Record<string, unknown>).query = result.data;
 		}
 		next();
 	};

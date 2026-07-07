@@ -4,9 +4,12 @@ import mongoose from "mongoose";
 import { User } from "../../users/user.model";
 import { Product } from "../../products/product.model";
 import { Sale } from "../sale.model";
+import { Role } from "../../roles/role.model";
+import { Category } from "../../categories/category.model";
 
 const testEmail = "test-sales@test.com";
 const testPassword = "Test123456";
+const testCategory = "test";
 let authToken = "";
 let testProductId = "";
 
@@ -24,11 +27,15 @@ beforeAll(async () => {
 	await mongoose.connect(mongoUri);
 
 	await User.deleteMany({ email: testEmail });
+	await Category.deleteMany({ name: testCategory });
+	await Category.create({ name: testCategory });
+
+	const adminRole = await Role.findOne({ name: "admin" });
 	await User.create({
 		name: "Test User",
 		email: testEmail,
 		password: testPassword,
-		role: null,
+		role: adminRole?._id ?? null,
 		isActive: true,
 	});
 
@@ -54,6 +61,7 @@ beforeAll(async () => {
 afterAll(async () => {
 	await Sale.deleteMany({});
 	await Product.deleteMany({ sku: "TST-SALE-001" });
+	await Category.deleteMany({ name: testCategory });
 	await User.deleteMany({ email: testEmail });
 	await mongoose.disconnect();
 }, 30000);
@@ -77,7 +85,8 @@ describe("POST /api/v1/sales", () => {
 	});
 
 	it("should reject sale with insufficient stock (400)", async () => {
-		const currentStock = (await Product.findById(testProductId))?.stockQuantity ?? 7;
+		const currentStock =
+			(await Product.findById(testProductId))?.stockQuantity ?? 7;
 
 		const res = await request(app)
 			.post("/api/v1/sales")

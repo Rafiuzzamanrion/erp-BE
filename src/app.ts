@@ -3,7 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
-import mongoSanitize from "express-mongo-sanitize";
+import { mongoSanitize } from "./middlewares/mongoSanitize.middleware";
 import pinoHttp from "pino-http";
 import { env } from "./config/env";
 import { setupSwagger } from "./config/swagger";
@@ -14,6 +14,7 @@ import authRoutes from "./modules/auth/auth.route";
 import userRoutes from "./modules/users/user.route";
 import roleRoutes from "./modules/roles/role.route";
 import permissionRoutes from "./modules/roles/permission.route";
+import categoryRoutes from "./modules/categories/category.route";
 import productRoutes from "./modules/products/product.route";
 import saleRoutes from "./modules/sales/sale.route";
 import dashboardRoutes from "./modules/dashboard/dashboard.route";
@@ -32,10 +33,14 @@ app.use(
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(mongoSanitize());
+app.use(mongoSanitize);
 
 if (env.NODE_ENV === "development") {
-	app.use(pinoHttp({ transport: { target: "pino-pretty", options: { colorize: true } } }));
+	app.use(
+		pinoHttp({
+			transport: { target: "pino-pretty", options: { colorize: true } },
+		})
+	);
 }
 
 const loginLimiter = rateLimit({
@@ -68,6 +73,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/roles", roleRoutes);
 app.use("/api/v1/permissions", permissionRoutes);
+app.use("/api/v1/categories", categoryRoutes);
 app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/sales", saleRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);

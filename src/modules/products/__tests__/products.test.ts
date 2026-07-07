@@ -3,9 +3,12 @@ import app from "../../../app";
 import mongoose from "mongoose";
 import { User } from "../../users/user.model";
 import { Product } from "../product.model";
+import { Role } from "../../roles/role.model";
+import { Category } from "../../categories/category.model";
 
 const testEmail = "test-product@test.com";
 const testPassword = "Test123456";
+const testCategory = "test";
 let authToken = "";
 
 jest.mock("../../../common/utils/cloudinaryUpload", () => ({
@@ -21,11 +24,15 @@ beforeAll(async () => {
 		process.env.MONGODB_URI || "mongodb://localhost:27017/erp-test";
 	await mongoose.connect(mongoUri);
 	await User.deleteMany({ email: testEmail });
+	await Category.deleteMany({ name: testCategory });
+	await Category.create({ name: testCategory });
+
+	const adminRole = await Role.findOne({ name: "admin" });
 	await User.create({
 		name: "Test User",
 		email: testEmail,
 		password: testPassword,
-		role: null,
+		role: adminRole?._id ?? null,
 		isActive: true,
 	});
 
@@ -38,6 +45,7 @@ beforeAll(async () => {
 afterAll(async () => {
 	await Product.deleteMany({ sku: "TST-001" });
 	await Product.deleteMany({ sku: "TST-002" });
+	await Category.deleteMany({ name: testCategory });
 	await User.deleteMany({ email: testEmail });
 	await mongoose.disconnect();
 }, 30000);

@@ -1,6 +1,12 @@
 import { Router } from "express";
 import { authenticate } from "../../middlewares/auth.middleware";
 import { authorize } from "../../middlewares/rbac.middleware";
+import { validate } from "../../middlewares/validate.middleware";
+import {
+	createPermissionSchema,
+	updatePermissionSchema,
+	permissionIdParamsSchema,
+} from "./permission.schema";
 import * as permissionController from "./permission.controller";
 
 const router = Router();
@@ -42,7 +48,11 @@ router.use(authenticate, authorize("admin"));
  *                 key: "product:create"
  *                 description: "Create products"
  */
-router.post("/", permissionController.createPermission);
+router.post(
+	"/",
+	validate(createPermissionSchema),
+	permissionController.createPermission
+);
 
 /**
  * @swagger
@@ -91,7 +101,11 @@ router.get("/", permissionController.getPermissions);
  *                 key: "product:create"
  *                 description: "Create products"
  */
-router.get("/:id", permissionController.getPermission);
+router.get(
+	"/:id",
+	validate(permissionIdParamsSchema, "params"),
+	permissionController.getPermission
+);
 
 /**
  * @swagger
@@ -131,7 +145,12 @@ router.get("/:id", permissionController.getPermission);
  *                 key: "product:create"
  *                 description: "Create products"
  */
-router.put("/:id", permissionController.updatePermission);
+router.put(
+	"/:id",
+	validate(permissionIdParamsSchema, "params"),
+	validate(updatePermissionSchema),
+	permissionController.updatePermission
+);
 
 /**
  * @swagger
@@ -159,7 +178,10 @@ router.put("/:id", permissionController.updatePermission);
  *                 _id: "64a1b2c3d4e5f6"
  *                 key: "product:create"
  */
-router.delete("/:id", permissionController.deletePermission);
+router.delete(
+	"/:id",
+	validate(permissionIdParamsSchema, "params"),
+	permissionController.deletePermission
+);
 
 export default router;
-
