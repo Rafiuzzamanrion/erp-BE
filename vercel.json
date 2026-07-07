@@ -1,7 +1,6 @@
 {
   "buildCommand": "yarn build",
-  "outputDirectory": "dist",
-  "installCommand": "yarn install",
+  "installCommand": "yarn install --production=false",
   "functions": {
     "api/index.js": {
       "memory": 512,
