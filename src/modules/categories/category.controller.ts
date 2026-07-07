@@ -7,6 +7,7 @@ import {
 	createCategorySchema,
 	updateCategorySchema,
 	categoryIdParamsSchema,
+	categoryQuerySchema,
 } from "./category.schema";
 
 export const createCategory = asyncHandler(
@@ -24,9 +25,15 @@ export const createCategory = asyncHandler(
 );
 
 export const getCategories = asyncHandler(
-	async (_req: Request, res: Response) => {
-		const categories = await categoryService.getCategories();
-		ApiResponse.success(res, "Categories fetched successfully", categories);
+	async (req: Request, res: Response) => {
+		const query = categoryQuerySchema.parse(req.query);
+		const { categories, meta } = await categoryService.getCategories(query);
+		ApiResponse.success(
+			res,
+			"Categories fetched successfully",
+			categories,
+			meta
+		);
 	}
 );
 

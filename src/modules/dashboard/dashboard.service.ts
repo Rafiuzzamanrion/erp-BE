@@ -9,9 +9,21 @@ import {
 	RecentSale,
 } from "./dashboard.types";
 
+const statsCache = new Map<string, { data: DashboardStats; expiry: number }>();
+const STATS_TTL = 30_000;
+
 export const getStats = async (
 	query?: DashboardQuery
 ): Promise<DashboardStats> => {
+	const cacheKey = query
+		? `stats-${query.startDate ?? ""}-${query.endDate ?? ""}`
+		: "stats-default";
+
+	const cached = statsCache.get(cacheKey);
+	if (cached && cached.expiry > Date.now()) {
+		return cached.data;
+	}
+
 	const [totalProducts, lowStockProducts] = await Promise.all([
 		Product.countDocuments(),
 		Product.aggregate<LowStockProduct>([
@@ -81,7 +93,7 @@ export const getStats = async (
 			},
 		},
 		{ $sort: { revenue: -1 } },
-		{ $limit: 5 },
+		{ $limit: 8 },
 	]);
 
 	const categoryRevenue: CategoryRevenue[] = categoryRevenueAgg.map((c) => ({
@@ -89,35 +101,57 @@ export const getStats = async (
 		revenue: c.revenue,
 	}));
 
-	const recentSales = await Sale.find()
-		.sort({ createdAt: -1 })
-		.limit(5)
-		.populate("soldBy", "name")
-		.lean();
+	const recentSalesAgg = await Sale.aggregate([
+		{ $sort: { createdAt: -1 } },
+		{ $limit: 5 },
+		{
+			$lookup: {
+				from: "users",
+				localField: "soldBy",
+				foreignField: "_id",
+				pipeline: [{ $project: { name: 1 } }],
+				as: "soldBy",
+			},
+		},
+		{ $unwind: "$soldBy" },
+		{
+			$project: {
+				_id: { $toString: "$_id" },
+				grandTotal: 1,
+				createdAt: 1,
+				"soldBy._id": { $toString: "$soldBy._id" },
+				"soldBy.name": 1,
+				items: 1,
+			},
+		},
+	]);
 
-	const mappedRecentSales: RecentSale[] = recentSales.map((s) => {
-		const soldBy = s.soldBy as unknown as { _id: string; name: string };
-		return {
-			_id: String(s._id),
-			grandTotal: s.grandTotal,
-			createdAt: s.createdAt.toISOString(),
-			soldBy: { _id: String(soldBy._id), name: soldBy.name },
-			items: s.items.map((item) => ({
+	const recentSales: RecentSale[] = recentSalesAgg.map((s) => ({
+		_id: s._id,
+		grandTotal: s.grandTotal,
+		createdAt: s.createdAt.toISOString(),
+		soldBy: s.soldBy,
+		items: s.items.map(
+			(item: { productName: string; quantity: number; subtotal: number }) => ({
 				productName: item.productName,
 				quantity: item.quantity,
 				subtotal: item.subtotal,
-			})),
-		};
-	});
+			})
+		),
+	}));
 
-	return {
+	const data: DashboardStats = {
 		totalProducts,
 		totalSales,
 		lowStockProducts,
 		lowStockCount,
 		totalRevenue,
-		recentSales: mappedRecentSales,
+		recentSales,
 		dailyRevenue,
 		categoryRevenue,
 	};
+
+	statsCache.set(cacheKey, { data, expiry: Date.now() + STATS_TTL });
+
+	return data;
 };

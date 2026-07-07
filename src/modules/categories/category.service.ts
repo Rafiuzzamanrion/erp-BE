@@ -2,7 +2,12 @@ import { Category, ICategory } from "./category.model";
 import { Product } from "../products/product.model";
 import { ApiError } from "../../common/utils/ApiError";
 import { HTTP_STATUS } from "../../common/constants/httpStatus.constant";
-import { CreateCategoryInput, UpdateCategoryInput } from "./category.types";
+import { QueryBuilder } from "../../common/utils/queryBuilder";
+import {
+	CreateCategoryInput,
+	UpdateCategoryInput,
+	CategoryQuery,
+} from "./category.types";
 
 export const createCategory = async (
 	data: CreateCategoryInput
@@ -17,8 +22,27 @@ export const createCategory = async (
 	return Category.create(data);
 };
 
-export const getCategories = async (): Promise<ICategory[]> => {
-	return Category.find().sort({ name: 1 }).lean();
+export const getCategories = async (
+	query: CategoryQuery
+): Promise<{
+	categories: ICategory[];
+	meta: { page: number; limit: number; total: number; totalPages: number };
+}> => {
+	const { page, limit, ...rest } = query;
+
+	const result = await new QueryBuilder<ICategory>(
+		Category,
+		rest as Record<string, unknown>
+	)
+		.search(["name", "description"])
+		.sort(query.sort || "name")
+		.paginate(page, limit)
+		.execute();
+
+	return {
+		categories: result.data as unknown as ICategory[],
+		meta: result.meta,
+	};
 };
 
 export const getCategory = async (id: string): Promise<ICategory> => {
@@ -72,6 +96,8 @@ export const deleteCategory = async (id: string): Promise<void> => {
 };
 
 export const categoryExists = async (name: string): Promise<boolean> => {
-	const count = await Category.countDocuments({ name: name.toLowerCase() });
-	return count > 0;
+	const doc = await Category.findOne({ name: name.toLowerCase() })
+		.select("_id")
+		.lean();
+	return !!doc;
 };

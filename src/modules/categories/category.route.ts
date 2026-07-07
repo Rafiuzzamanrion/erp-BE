@@ -6,6 +6,7 @@ import {
 	createCategorySchema,
 	updateCategorySchema,
 	categoryIdParamsSchema,
+	categoryQuerySchema,
 } from "./category.schema";
 import * as categoryController from "./category.controller";
 
@@ -25,7 +26,11 @@ router.use(authenticate);
  *       200:
  *         description: Categories fetched successfully
  */
-router.get("/", categoryController.getCategories);
+router.get(
+	"/",
+	validate(categoryQuerySchema, "query"),
+	categoryController.getCategories
+);
 
 /**
  * @swagger
