@@ -1,176 +1,60 @@
-# Mini ERP — Inventory & Sales Management System
+# ERP Backend
 
-A production-grade, full-stack ERP application with JWT authentication, role-based access control, product management with Cloudinary image upload, a transactional sales workflow with automatic stock deduction, and a real-time statistics dashboard.
-
-## Tech Stack
-
-| Layer | Technologies |
-|---|---|
-| **Backend** | Node.js, Express, TypeScript, MongoDB (Mongoose), JWT, Cloudinary, Zod, Swagger |
-| **Frontend** | React (Vite), TypeScript, Tailwind CSS, Shadcn UI, Redux Toolkit (RTK Query), React Hook Form, Framer Motion, Socket.IO |
-| **Validation** | Zod (shared schemas — backend + frontend form validation) |
-| **Real-time** | Socket.IO (low-stock alerts on Dashboard) |
-
-## Prerequisites
-
-- **Node.js** >= 18
-- **Yarn**
-- **MongoDB** — local instance or [MongoDB Atlas](https://www.mongodb.com/atlas) cluster (Atlas required for the transactional sales feature, as MongoDB transactions need a replica set)
-- **Cloudinary** account ([free tier](https://cloudinary.com/)) — for product image uploads
-
-## Project Structure
-
-```
-├── erp-BE/          # Backend (Express + TypeScript + MongoDB)
-└── erp-FE/          # Frontend (React + TypeScript + Tailwind)
-```
-
-## Quick Start
-
-### 1. Backend Setup
-
-```bash
-cd erp-BE
-
-# Install dependencies
-yarn install
-
-# Copy environment variables
-cp .env.example .env
-# Edit .env with your MongoDB URI, JWT secret, and Cloudinary credentials
-
-# Seed the database (creates admin user, roles, permissions, sample products)
-yarn seed
-
-# Start development server
-yarn dev
-```
-
-Backend runs on `http://localhost:5000`.
-
-### 2. Frontend Setup
-
-```bash
-cd erp-FE
-
-# Install dependencies
-yarn install
-
-# Create env file
-echo VITE_API_URL=http://localhost:5000/api/v1 > .env
-
-# Start development server
-yarn dev
-```
-
-Frontend runs on `http://localhost:5173`.
-
-### 3. Login
-
-| Email | Password |
-|---|---|
-| `admin@erp.com` | `Admin@123` |
-
-## Environment Variables
-
-### Backend (`erp-BE/.env`)
-
-| Variable | Required | Description |
-|---|---|---|
-| `PORT` | No | Server port (default: 5000) |
-| `MONGODB_URI` | Yes | MongoDB connection string |
-| `JWT_SECRET` | Yes | Secret key for JWT signing |
-| `JWT_EXPIRES_IN` | No | Token expiry (default: 1d) |
-| `CLOUDINARY_CLOUD_NAME` | Yes | Cloudinary cloud name |
-| `CLOUDINARY_API_KEY` | Yes | Cloudinary API key |
-| `CLOUDINARY_API_SECRET` | Yes | Cloudinary API secret |
-| `CLIENT_URL` | No | Frontend URL for CORS (default: http://localhost:5173) |
-| `NODE_ENV` | No | Environment (development/production) |
-
-### Frontend (`erp-FE/.env`)
-
-| Variable | Required | Description |
-|---|---|---|
-| `VITE_API_URL` | No | Backend API base URL (default: http://localhost:5000/api/v1) |
-
-## Seed Script
-
-```bash
-cd erp-BE
-yarn seed
-```
-
-Creates:
-- **9 permissions** (product:create, product:update, product:delete, product:view, sale:create, sale:view, user:manage, role:manage, dashboard:view)
-- **3 roles** (Admin, Manager, Employee) with appropriate permissions
-- **1 admin user** (`admin@erp.com` / `Admin@123`)
-- **10 sample products** across 5 categories
-
-## API Documentation
-
-**Swagger UI**: `http://localhost:5000/api-docs` (available when backend is running)
-
-All endpoints are versioned under `/api/v1/` and documented with:
-- Request/response schemas
-- Authentication requirements
-- Role/permission requirements
-- Example success and error responses
-
-## Available Scripts
-
-### Backend
-
-| Script | Description |
-|---|---|
-| `yarn dev` | Start development server with hot reload |
-| `yarn build` | Compile TypeScript to JavaScript |
-| `yarn start` | Run compiled production build |
-| `yarn seed` | Seed database with initial data |
-| `yarn lint` | Run ESLint |
-| `yarn format` | Format code with Prettier |
-| `yarn typecheck` | TypeScript type checking |
-| `yarn test` | Run Jest tests |
-
-### Frontend
-
-| Script | Description |
-|---|---|
-| `yarn dev` | Start Vite development server |
-| `yarn build` | Production build |
-| `yarn preview` | Preview production build |
-| `yarn lint` | Run ESLint |
-
-## Roles & Permissions
-
-| Action | Admin | Manager | Employee |
-|---|---|---|---|
-| Manage Users & Roles | ✓ | ✗ | ✗ |
-| Create/Update/Delete Products | ✓ | ✓ | ✗ |
-| View Products | ✓ | ✓ | ✓ |
-| Create Sales | ✓ | ✓ | ✓ |
-| View Sales History | ✓ | ✓ | ✓ |
-| View Dashboard | ✓ | ✓ | ✓ |
-
-The system implements **dynamic RBAC** — roles and permissions are stored in the database and can be managed via the API. The middleware resolves permissions from the database with an in-memory cache (60s TTL) to avoid DB hits on every request.
-
-## Deployment
-
-### Backend (Render / Railway)
-
-1. Create a new web service
-2. Build command: `cd erp-BE && yarn install && yarn build`
-3. Start command: `cd erp-BE && yarn start`
-4. Set all environment variables from `.env.example`
-5. Health check path: `/api/v1/health`
-
-### Frontend (Vercel / Netlify)
-
-1. Connect the `erp-FE/` directory as the project root
-2. Build command: `yarn build`
-3. Publish directory: `dist`
-4. Set environment variable: `VITE_API_URL` = your deployed backend URL + `/api/v1`
-5. Enable SPA fallback (all routes → `index.html`)
+Express + TypeScript + MongoDB API server. Modular monolith architecture with JWT auth, dynamic RBAC, file uploads to Cloudinary, and a reusable query builder for paginated list endpoints.
 
 ## Architecture
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed design decisions.
+Every domain (products, sales, categories, users, roles, dashboard) is a self-contained module:
+
+```
+module/
+  model.ts        — Mongoose schema, indexes, middleware hooks
+  schema.ts       — Zod validation schemas (body, params, query)
+  types.ts        — TypeScript types inferred from Zod
+  service.ts      — business logic, database operations
+  controller.ts   — request/response handling
+  route.ts        — route definitions, middleware composition, Swagger docs
+```
+
+Shared code lives under `common/` — the query builder, API response and error utilities, Cloudinary upload helper, HTTP status constants, and the async handler wrapper. Middleware under `middlewares/` covers auth, RBAC, Zod validation, and file uploads via multer.
+
+## Database
+
+MongoDB with Mongoose. Every collection has targeted indexes — the ones that matter most are on `stockQuantity` (product model, for the dashboard low-stock aggregation), `category` (product model, for filter dropdowns), `soldBy` (sale model, for populate joins), and `items.product` (sale model, for the dashboard's `$lookup` aggregation). Text indexes on product and category models support the regex search in the query builder.
+
+Transactions are used for sale creation — stock validation and deduction happen atomically. If a product doesn't exist or has insufficient stock, everything rolls back.
+
+## Query Builder
+
+Located at `common/utils/queryBuilder.ts`. A chainable class that wraps Mongoose queries:
+
+```ts
+new QueryBuilder<Product>(Product, query)
+  .search(["name", "sku", "category"])   // $regex across fields
+  .filter(["category"])                   // exact match on reserved keys
+  .sort("-createdAt")                     // default sort direction
+  .select("name sku price stock")         // field projection
+  .paginate(page, limit)                  // skip/limit + countDocuments
+  .execute()                              // returns { data, meta }
+```
+
+The search method escapes special regex characters and builds a case-insensitive `$or` across the specified fields. The filter method strips reserved keys (`search`, `sort`, `page`, `limit`) from the filter object so they don't leak into the database query. The paginate response includes `page`, `limit`, `total`, and `totalPages` in the meta object.
+
+## Caching
+
+Dashboard stats have a 30-second in-memory TTL — the most-hit endpoint avoids running 6+ aggregation pipelines on every request. The RBAC middleware caches role permissions for 60 seconds, avoiding a `Role.findById().populate()` on every authenticated request. The cache is invalidated when roles are updated or deleted through the role service.
+
+## Setup
+
+```bash
+yarn install
+cp .env.example .env
+yarn seed
+yarn dev
+```
+
+Runs on port 5000. Swagger at `/api-docs`. All endpoints are versioned under `/api/v1`.
+
+**Required env vars:** `MONGODB_URI`, `JWT_SECRET`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`. See `.env.example` for optional ones.
+
+**Scripts:** `yarn dev` (hot reload), `yarn build` (compile), `yarn seed` (populate DB), `yarn test`, `yarn typecheck`, `yarn lint`.
