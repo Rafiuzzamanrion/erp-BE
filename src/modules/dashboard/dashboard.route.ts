@@ -20,18 +20,53 @@ const router = Router();
  *         schema:
  *           type: string
  *           format: date
- *         description: Start date filter for sales (ISO format)
+ *         description: Start date filter for total revenue/sales (ISO format, e.g. 2024-01-01)
  *       - in: query
  *         name: endDate
  *         schema:
  *           type: string
  *           format: date
- *         description: End date filter for sales (ISO format)
+ *         description: End date filter for total revenue/sales (ISO format, e.g. 2024-01-31)
  *     responses:
  *       200:
  *         description: Dashboard stats retrieved successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "Dashboard stats retrieved successfully"
+ *               data:
+ *                 totalProducts: 150
+ *                 totalSales: 42
+ *                 lowStockProducts:
+ *                   - _id: "64a1b2c3d4e5f6"
+ *                     name: "Wireless Mouse"
+ *                     sku: "WM-001"
+ *                     stockQuantity: 3
+ *                 lowStockCount: 5
+ *                 totalRevenue: 12599.50
+ *                 recentSales:
+ *                   - _id: "64a1b2c3d4e5f6"
+ *                     grandTotal: 59.98
+ *                     createdAt: "2024-01-15T10:00:00.000Z"
+ *                     soldBy:
+ *                       _id: "64a1b2c3d4e5f6"
+ *                       name: "Admin User"
+ *                     items:
+ *                       - productName: "Wireless Mouse"
+ *                         quantity: 2
+ *                         subtotal: 59.98
+ *                 dailyRevenue:
+ *                   - date: "2024-01-15"
+ *                     revenue: 359.90
+ *                     sales: 6
+ *                 categoryRevenue:
+ *                   - category: "Wireless Mouse"
+ *                     revenue: 899.75
  *       401:
- *         description: Access denied
+ *         description: Not authenticated
+ *       403:
+ *         description: Insufficient permissions
  */
 router.get(
 	"/stats",
@@ -41,4 +76,3 @@ router.get(
 );
 
 export default router;
-

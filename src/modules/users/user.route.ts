@@ -18,10 +18,21 @@ router.use(authenticate, authorize("admin"));
  *     responses:
  *       200:
  *         description: Users retrieved successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "Users retrieved successfully"
+ *               data:
+ *                 - _id: "64a1b2c3d4e5f6"
+ *                   name: "Admin User"
+ *                   email: "admin@erp.com"
+ *                   role: "admin"
+ *                   isActive: true
  *       401:
- *         description: Access denied
+ *         description: Not authenticated
  *       403:
- *         description: Forbidden
+ *         description: Insufficient permissions
  */
 router.get("/", userController.getUsers);
 
@@ -39,13 +50,27 @@ router.get("/", userController.getUsers);
  *         required: true
  *         schema:
  *           type: string
+ *         description: User ID
  *     responses:
  *       200:
  *         description: User retrieved successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "User retrieved successfully"
+ *               data:
+ *                 _id: "64a1b2c3d4e5f6"
+ *                 name: "Admin User"
+ *                 email: "admin@erp.com"
+ *                 role: "admin"
+ *                 isActive: true
  *       401:
- *         description: Access denied
+ *         description: Not authenticated
  *       403:
- *         description: Forbidden
+ *         description: Insufficient permissions
+ *       404:
+ *         description: User not found
  */
 router.get("/:id", userController.getUser);
 
@@ -70,26 +95,42 @@ router.get("/:id", userController.getUser);
  *             properties:
  *               name:
  *                 type: string
+ *                 example: "John Doe"
  *               email:
  *                 type: string
  *                 format: email
+ *                 example: "john@example.com"
  *               password:
  *                 type: string
  *                 minLength: 6
+ *                 example: "password123"
  *               role:
  *                 type: string
  *                 enum: [admin, manager, employee]
+ *                 example: "employee"
  *               isActive:
  *                 type: boolean
+ *                 example: true
  *     responses:
  *       201:
  *         description: User created successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "User created successfully"
+ *               data:
+ *                 _id: "64a1b2c3d4e5f6"
+ *                 name: "John Doe"
+ *                 email: "john@example.com"
+ *                 role: "employee"
+ *                 isActive: true
  *       400:
  *         description: Validation failed
  *       401:
- *         description: Access denied
+ *         description: Not authenticated
  *       403:
- *         description: Forbidden
+ *         description: Insufficient permissions
  *       409:
  *         description: Email already exists
  */
@@ -109,6 +150,7 @@ router.post("/", userController.createUser);
  *         required: true
  *         schema:
  *           type: string
+ *         description: User ID
  *     requestBody:
  *       required: true
  *       content:
@@ -118,9 +160,11 @@ router.post("/", userController.createUser);
  *             properties:
  *               name:
  *                 type: string
+ *                 example: "John Updated"
  *               email:
  *                 type: string
  *                 format: email
+ *                 example: "john.updated@example.com"
  *               password:
  *                 type: string
  *                 minLength: 6
@@ -132,12 +176,23 @@ router.post("/", userController.createUser);
  *     responses:
  *       200:
  *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "User updated successfully"
+ *               data:
+ *                 _id: "64a1b2c3d4e5f6"
+ *                 name: "John Updated"
+ *                 email: "john.updated@example.com"
+ *                 role: "employee"
+ *                 isActive: true
  *       400:
  *         description: Validation failed
  *       401:
- *         description: Access denied
+ *         description: Not authenticated
  *       403:
- *         description: Forbidden
+ *         description: Insufficient permissions
  *       404:
  *         description: User not found
  */
@@ -157,17 +212,22 @@ router.put("/:id", userController.updateUser);
  *         required: true
  *         schema:
  *           type: string
+ *         description: User ID
  *     responses:
  *       200:
  *         description: User deleted successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "User deleted successfully"
  *       401:
- *         description: Access denied
+ *         description: Not authenticated
  *       403:
- *         description: Forbidden
+ *         description: Insufficient permissions
  *       404:
  *         description: User not found
  */
 router.delete("/:id", userController.deleteUser);
 
 export default router;
-
