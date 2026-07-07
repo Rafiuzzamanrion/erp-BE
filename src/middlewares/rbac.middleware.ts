@@ -15,15 +15,14 @@ const resolveRoleName = async (roleId: string): Promise<string | null> => {
 		return cached.roleName;
 	}
 
-	const role = await Role.findById(roleId).lean();
-	if (!role) return null;
-
-	const permissions = await Role.findById(roleId)
+	const role = await Role.findById(roleId)
 		.populate<{ permissions: Array<{ key: string }> }>("permissions")
 		.lean();
 
+	if (!role) return null;
+
 	permissionCache.set(roleId, {
-		permissions: permissions?.permissions.map((p) => p.key) ?? [],
+		permissions: role.permissions?.map((p) => p.key) ?? [],
 		roleName: role.name,
 		expiry: Date.now() + CACHE_TTL,
 	});
@@ -78,10 +77,7 @@ export const requirePermission =
 					return next();
 				}
 				return next(
-					new ApiError(
-						"Insufficient permissions",
-						HTTP_STATUS.FORBIDDEN
-					)
+					new ApiError("Insufficient permissions", HTTP_STATUS.FORBIDDEN)
 				);
 			}
 
@@ -96,16 +92,11 @@ export const requirePermission =
 					expiry: Date.now() + CACHE_TTL,
 				});
 				return next(
-					new ApiError(
-						"Insufficient permissions",
-						HTTP_STATUS.FORBIDDEN
-					)
+					new ApiError("Insufficient permissions", HTTP_STATUS.FORBIDDEN)
 				);
 			}
 
-			const permissions = role.permissions.map(
-				(p: { key: string }) => p.key
-			);
+			const permissions = role.permissions.map((p: { key: string }) => p.key);
 			permissionCache.set(req.user.role, {
 				permissions,
 				roleName: role.name,
@@ -123,3 +114,7 @@ export const requirePermission =
 			return next(error);
 		}
 	};
+
+export const clearPermissionCache = (roleId: string): void => {
+	permissionCache.delete(roleId);
+};

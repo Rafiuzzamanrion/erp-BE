@@ -38,6 +38,8 @@ const productSchema = new Schema<IProduct>(
 );
 
 productSchema.index({ sku: 1 });
+productSchema.index({ stockQuantity: 1 });
+productSchema.index({ category: 1 });
 productSchema.index({ name: "text", sku: "text", category: "text" });
 
 productSchema.pre(

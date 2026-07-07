@@ -61,6 +61,7 @@ export const getProducts = async (
 		.search(["name", "sku", "category"])
 		.filter(["category"])
 		.sort("-createdAt")
+		.select("name sku category sellingPrice stockQuantity imageUrl")
 		.paginate(page, limit)
 		.execute();
 
@@ -71,11 +72,11 @@ export const getProducts = async (
 };
 
 export const getProductById = async (id: string): Promise<IProduct> => {
-	const product = await Product.findById(id);
+	const product = await Product.findById(id).lean();
 	if (!product) {
 		throw new ApiError("Product not found", HTTP_STATUS.NOT_FOUND);
 	}
-	return product.toObject() as IProduct;
+	return product as IProduct;
 };
 
 export const updateProduct = async (

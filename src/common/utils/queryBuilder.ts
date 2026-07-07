@@ -20,6 +20,7 @@ export class QueryBuilder<T> {
 	private sortStr = "-createdAt";
 	private _page = 1;
 	private _limit = 10;
+	private selectStr?: string;
 	private populatePaths: Array<{ path: string; select?: string }> = [];
 
 	constructor(
@@ -74,6 +75,11 @@ export class QueryBuilder<T> {
 		return this;
 	}
 
+	select(fields: string): this {
+		this.selectStr = fields;
+		return this;
+	}
+
 	populate(path: string, select?: string): this {
 		this.populatePaths.push({ path, select });
 		return this;
@@ -86,6 +92,10 @@ export class QueryBuilder<T> {
 			.sort(this.sortStr)
 			.skip(skip)
 			.limit(this._limit);
+
+		if (this.selectStr) {
+			query = query.select(this.selectStr);
+		}
 
 		for (const { path, select } of this.populatePaths) {
 			query = query.populate(path, select);
